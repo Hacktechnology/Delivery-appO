@@ -1,0 +1,16 @@
+{
+  "name": "Delivery Pro",
+  "short_name": "Delivery",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#2575fc",
+  "theme_color": "#2575fc",
+  "icons": [
+    {
+      "src": "icono_delivery.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

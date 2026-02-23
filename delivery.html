@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Pro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header-app">
+        <img src="https://cdn-icons-png.flaticon.com/512/2972/2972185.png" class="repartidor-img">
+        <h2>Pedidos Pendientes</h2>
+    </div>
+
+    <div class="container-list">
+        <div id="aviso-audio" onclick="activarSonido()">⚠️ Toca aquí para activar timbre</div>
+        <div id="lista-pedidos"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBw...", // USA TU API KEY
+            databaseURL: "https://deliverynegocio-be953-default-rtdb.firebaseio.com",
+            projectId: "deliverynegocio-be953",
+            appId: "1:570590262914:web:..."
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const timbre = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
+        let totalAnterior = 0;
+        let audioOk = false;
+
+        window.activarSonido = () => {
+            timbre.play().then(() => { timbre.pause(); audioOk = true; document.getElementById('aviso-audio').style.display='none'; });
+        }
+
+        onValue(ref(db, 'pedidos/'), (snapshot) => {
+            const data = snapshot.val();
+            const contenedor = document.getElementById('lista-pedidos');
+            contenedor.innerHTML = "";
+            if(!data) return;
+
+            const activos = Object.keys(data).filter(id => data[id].estado === "Activo");
+            if(activos.length > totalAnterior && totalAnterior !== 0 && audioOk) timbre.play();
+            totalAnterior = activos.length;
+
+            activos.forEach(id => {
+                contenedor.innerHTML += `
+                    <div class="card card-activa">
+                        <span class="label">Cliente</span>
+                        <p class="info-principal">${data[id].cliente}</p>
+                        <p>📦 ${data[id].producto}</p>
+                        <p><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data[id].direccion)}" target="_blank" style="color:#f5576c; text-decoration:none;">📍 ${data[id].direccion}</a></p>
+                        <button class="btn-whatsapp" onclick="enviarWhatsapp('${data[id].telefono}', '${data[id].cliente}', '${data[id].direccion}')">💬 WhatsApp</button>
+                        <button class="btn-delivery" onclick="finalizarEntrega('${id}')">✅ Entregado</button>
+                    </div>
+                `;
+            });
+        });
+
+        window.enviarWhatsapp = (tel, nom, dir) => {
+            window.open(`https://wa.me/58${tel}?text=${encodeURIComponent('¡Hola '+nom+'! Ya voy llegando con tu pedido.')}`, '_blank');
+        }
+
+        window.finalizarEntrega = (id) => {
+            const nota = prompt("¡Pedido entregado! ¿Cuántas estrellas te dio el cliente? (1-5)", "5");
+            if(nota) {
+                update(ref(db, 'pedidos/' + id), { estado: "Finalizado", calificacion: parseInt(nota) });
+            }
+        }
+    </script>
+</body>
+</html>
+
